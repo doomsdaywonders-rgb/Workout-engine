@@ -32,6 +32,8 @@ class DailyLog(db.Model):
 
 # Initialize Database
 with app.app_context():
+    # UNCOMMENT THE LINE BELOW FOR EXACTLY 1 DEPLOYMENT TO FIX THE DATABASE ERROR
+    # db.drop_all() 
     db.create_all()
 
 @app.route('/')
