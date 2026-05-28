@@ -1,12 +1,11 @@
-import os
-from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from datetime import date
+import os
 
 app = Flask(__name__)
 
-# Railway provides the PostgreSQL URL as an environment variable called DATABASE_URL.
-# We fallback to a local SQLite file if you run this on your personal computer for testing.
+# Railway Database Connection with Modern psycopg driver
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///local_terminal.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
@@ -15,108 +14,87 @@ elif db_url.startswith("postgresql://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 
-# ==========================================
-# DATABASE SCHEMA (POSTGRESQL)
-# ==========================================
-
+# Database Architecture
 class DailyLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, unique=True, default=datetime.utcnow().date)
-    weight = db.Column(db.Float, nullable=False)
+    date = db.Column(db.Date, unique=True, default=date.today)
+    weight = db.Column(db.Float, default=88.0)
     calories_in = db.Column(db.Integer, default=0)
     protein_in = db.Column(db.Integer, default=0)
-    tdee = db.Column(db.Integer, default=2500) # Baseline TDEE
-
-class Objectives(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, unique=True, default=datetime.utcnow().date)
+    
+    # Binary Execution Objectives
     workout_done = db.Column(db.Boolean, default=False)
-    run_5km_done = db.Column(db.Boolean, default=False)
+    run_done = db.Column(db.Boolean, default=False)
     creatine_done = db.Column(db.Boolean, default=False)
     steps_done = db.Column(db.Boolean, default=False)
 
-# Initialize database tables
+# Initialize Database
 with app.app_context():
     db.create_all()
 
-# ==========================================
-# ROUTES & LOGIC
-# ==========================================
-
 @app.route('/')
-def dashboard():
-    today = datetime.utcnow().date()
-    
-    # Fetch today's data or create empty templates if none exist
+def index():
+    today = date.today()
     log = DailyLog.query.filter_by(date=today).first()
-    objectives = Objectives.query.filter_by(date=today).first()
     
+    # Create a fresh log for the day if it doesn't exist
     if not log:
-        # Fallback dummy data if nothing is logged yet
-        log = DailyLog(weight=88.0, calories_in=0, protein_in=0, tdee=2500)
-    if not objectives:
-        objectives = Objectives(workout_done=False, run_5km_done=False, creatine_done=False, steps_done=False)
+        # Carry over yesterday's weight if possible
+        last_log = DailyLog.query.order_by(DailyLog.date.desc()).first()
+        start_weight = last_log.weight if last_log else 88.0
+        log = DailyLog(date=today, weight=start_weight)
+        db.session.add(log)
+        db.session.commit()
 
-    # Trajectory Forecasting Engine
-    # 7700 kcal deficit = 1kg of fat loss.
-    deficit = log.tdee - log.calories_in
-    daily_kg_loss = deficit / 7700.0 if deficit > 0 else 0
-    forecasted_weight = log.weight - daily_kg_loss
+    # --- THE CLOSED-LOOP TRAJECTORY MATH ---
+    base_tdee = 2500
+    active_burn = 0
+    
+    # Add active burn based on UI checkboxes
+    if log.workout_done:
+        active_burn += 300
+    if log.run_done:
+        active_burn += 400
+        
+    total_tdee = base_tdee + active_burn
 
-    # Calculate completed objectives out of 4
-    completed_tasks = sum([objectives.workout_done, objectives.run_5km_done, objectives.creatine_done, objectives.steps_done])
+    # Calculate biological fat loss forecast
+    # If no calories are logged yet, assume maintenance to prevent wild chart swings
+    effective_calories = log.calories_in if log.calories_in > 0 else total_tdee
+    deficit = total_tdee - effective_calories
+    
+    # 7700 kcal deficit = 1kg fat loss
+    fat_loss_kg = deficit / 7700
+    forecasted_weight = round(log.weight - fat_loss_kg, 2)
 
-    return render_template('index.html', 
-                           log=log, 
-                           objectives=objectives,
-                           completed_tasks=completed_tasks,
-                           forecasted_weight=round(forecasted_weight, 2))
+    # UI Counter
+    completed_tasks = sum([log.workout_done, log.run_done, log.creatine_done, log.steps_done])
+
+    return render_template('index.html', log=log, tdee=total_tdee, forecasted_weight=forecasted_weight, completed_tasks=completed_tasks)
+
 
 @app.route('/log_data', methods=['POST'])
 def log_data():
-    """Endpoint to handle form submissions for new metrics."""
-    today = datetime.utcnow().date()
-    log = DailyLog.query.filter_by(date=today).first()
-    
-    if not log:
-        log = DailyLog(date=today)
-        db.session.add(log)
-    
-    # Update metrics from the frontend form
+    log = DailyLog.query.filter_by(date=date.today()).first()
     log.weight = float(request.form.get('weight', log.weight))
     log.calories_in = int(request.form.get('calories', log.calories_in))
     log.protein_in = int(request.form.get('protein', log.protein_in))
-    
     db.session.commit()
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('index'))
 
-@app.route('/toggle_objective/<task_name>', methods=['POST'])
-def toggle_objective(task_name):
-    """Endpoint to flip the boolean state of a daily objective."""
-    today = datetime.utcnow().date()
-    objectives = Objectives.query.filter_by(date=today).first()
-    
-    if not objectives:
-        objectives = Objectives(date=today)
-        db.session.add(objectives)
 
-    # Flip the boolean value based on which button was pressed
-    if task_name == 'workout':
-        objectives.workout_done = not objectives.workout_done
-    elif task_name == 'run':
-        objectives.run_5km_done = not objectives.run_5km_done
-    elif task_name == 'creatine':
-        objectives.creatine_done = not objectives.creatine_done
-    elif task_name == 'steps':
-        objectives.steps_done = not objectives.steps_done
-
+@app.route('/toggle/<task>', methods=['POST'])
+def toggle(task):
+    log = DailyLog.query.filter_by(date=date.today()).first()
+    if task == 'workout': log.workout_done = not log.workout_done
+    elif task == 'run': log.run_done = not log.run_done
+    elif task == 'creatine': log.creatine_done = not log.creatine_done
+    elif task == 'steps': log.steps_done = not log.steps_done
     db.session.commit()
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('index'))
+
 
 if __name__ == '__main__':
-    # Railway expects apps to bind to the PORT environment variable
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
