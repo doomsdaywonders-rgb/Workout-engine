@@ -11,26 +11,19 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        gymDark: '#09090b',
-                        gymPanel: '#18181b',
-                        volt: '#eab308',
-                        neonBlue: '#06b6d4'
-                    },
-                    fontFamily: {
-                        display: ['Teko', 'sans-serif'],
-                        sans: ['Inter', 'sans-serif']
-                    }
+                    colors: { gymDark: '#09090b', gymPanel: '#18181b', volt: '#eab308', neonBlue: '#06b6d4' },
+                    fontFamily: { display: ['Teko', 'sans-serif'], sans: ['Inter', 'sans-serif'] }
                 }
             }
         }
     </script>
     <style>
-        /* Custom Dark Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #eab308; }
+        /* Hide the default HTML arrow on details tag */
+        details > summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body class="bg-gymDark text-gray-200 font-sans p-4 md:p-8">
@@ -39,7 +32,7 @@
     <header class="flex flex-col md:flex-row justify-between md:items-end border-b-2 border-gray-800 pb-4 gap-4">
         <div>
             <h1 class="text-5xl font-display font-bold text-white tracking-wide">PHYSIQUE<span class="text-volt">.ENGINE</span></h1>
-            <p class="text-sm text-gray-400 uppercase font-semibold tracking-wider">Target: 80KG | Timeline: Active</p>
+            <p class="text-sm text-gray-400 uppercase font-semibold tracking-wider">Target: 80KG | Timeline: Active | Base TDEE: {{ tdee }} kcal</p>
         </div>
         <div class="text-left md:text-right">
             <p class="text-4xl font-display font-bold text-neonBlue">{{ log.weight }} KG</p>
@@ -49,21 +42,19 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg flex flex-col justify-between">
+        <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg flex flex-col justify-between h-full">
             <div>
                 <h2 class="text-2xl font-display font-bold text-white mb-4">FUEL INTAKE</h2>
-                
                 <div class="space-y-4">
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="font-bold text-gray-300">CALORIES</span>
-                            <span class="text-volt">{{ log.calories_in }} / {{ log.tdee }} kcal</span>
+                            <span class="text-volt">{{ log.calories_in }} / 2000 kcal</span>
                         </div>
                         <div class="w-full bg-gray-800 rounded-full h-3">
-                            <div class="bg-volt h-3 rounded-full" style="width: {{ (log.calories_in / log.tdee) * 100 if log.tdee > 0 else 0 }}%; max-width: 100%;"></div>
+                            <div class="bg-volt h-3 rounded-full" style="width: {{ (log.calories_in / 2000) * 100 }}%; max-width: 100%;"></div>
                         </div>
                     </div>
-
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="font-bold text-gray-300">PROTEIN</span>
@@ -79,9 +70,9 @@
             <form action="/log_data" method="POST" class="mt-6 bg-gray-900 p-4 rounded-lg border border-gray-800 space-y-3">
                 <p class="text-xs text-gray-500 font-bold uppercase mb-2">Update Today's Metrics</p>
                 <div class="flex gap-2">
-                    <input type="number" step="0.1" name="weight" placeholder="Weight" value="{{ log.weight }}" class="w-full bg-gray-800 text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-volt" required>
-                    <input type="number" name="calories" placeholder="Kcal" value="{{ log.calories_in }}" class="w-full bg-gray-800 text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-volt" required>
-                    <input type="number" name="protein" placeholder="Pro" value="{{ log.protein_in }}" class="w-full bg-gray-800 text-white px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-volt" required>
+                    <input type="number" step="0.1" name="weight" placeholder="Weight" value="{{ log.weight }}" class="w-full bg-gray-800 text-white px-2 py-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-volt" required>
+                    <input type="number" name="calories" placeholder="Kcal" value="{{ log.calories_in }}" class="w-full bg-gray-800 text-white px-2 py-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-volt" required>
+                    <input type="number" name="protein" placeholder="Pro" value="{{ log.protein_in }}" class="w-full bg-gray-800 text-white px-2 py-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-volt" required>
                 </div>
                 <button type="submit" class="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 rounded uppercase text-sm transition-colors border border-gray-700">
                     SAVE METRICS
@@ -89,211 +80,171 @@
             </form>
         </div>
 
-        <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg lg:col-span-2">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
-                <div>
-                    <h2 class="text-2xl font-display font-bold text-white">WEEKLY PROTOCOL MATRIX</h2>
-                    <p class="text-xs text-gray-500 uppercase">Architecture: 4x Lift | 2x Run | 1x Flush</p>
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-display font-bold text-white">TODAY'S EXECUTION</h2>
+                    <span class="bg-gray-800 text-volt text-xs px-2 py-1 rounded font-bold">{{ completed_tasks }}/4 COMPLETED</span>
                 </div>
-                <span id="execution-counter" class="bg-gray-800 text-volt text-xs px-3 py-1.5 rounded font-bold border border-gray-700">EXECUTION: 0/7 DAYS</span>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    
+                    <form action="/toggle/workout" method="POST">
+                        <button type="submit" class="w-full p-3 rounded-lg border text-sm font-bold uppercase transition-colors {% if log.workout_done %}bg-volt text-gymDark border-volt{% else %}bg-gray-900 text-gray-500 border-gray-700 hover:border-gray-500{% endif %}">
+                            <span class="block text-xs opacity-70 mb-1">+300 KCAL</span>
+                            WEIGHT LIFT
+                        </button>
+                    </form>
+
+                    <form action="/toggle/run" method="POST">
+                        <button type="submit" class="w-full p-3 rounded-lg border text-sm font-bold uppercase transition-colors {% if log.run_done %}bg-neonBlue text-gymDark border-neonBlue{% else %}bg-gray-900 text-gray-500 border-gray-700 hover:border-gray-500{% endif %}">
+                            <span class="block text-xs opacity-70 mb-1">+400 KCAL</span>
+                            5KM RUN
+                        </button>
+                    </form>
+
+                    <form action="/toggle/creatine" method="POST">
+                        <button type="submit" class="w-full p-3 rounded-lg border text-sm font-bold uppercase transition-colors {% if log.creatine_done %}bg-volt text-gymDark border-volt{% else %}bg-gray-900 text-gray-500 border-gray-700 hover:border-gray-500{% endif %}">
+                            <span class="block text-xs opacity-70 mb-1">HYDRATION</span>
+                            5G CREATINE
+                        </button>
+                    </form>
+
+                    <form action="/toggle/steps" method="POST">
+                        <button type="submit" class="w-full p-3 rounded-lg border text-sm font-bold uppercase transition-colors {% if log.steps_done %}bg-volt text-gymDark border-volt{% else %}bg-gray-900 text-gray-500 border-gray-700 hover:border-gray-500{% endif %}">
+                            <span class="block text-xs opacity-70 mb-1">BASELINE</span>
+                            10K STEPS
+                        </button>
+                    </form>
+                </div>
             </div>
 
-            <div class="space-y-3 h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+            <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg">
+                <h2 class="text-2xl font-display font-bold text-white mb-4">PROTOCOL DATABASE</h2>
                 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-600 transition-colors">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-500 font-bold">DAY 1</span>
-                            <span class="block text-xl font-display text-white">MON</span>
+                <div class="space-y-2 h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <details class="bg-gray-900 border border-gray-800 rounded-lg group">
+                        <summary class="flex justify-between items-center p-4 font-bold cursor-pointer list-none hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <span class="text-volt w-12 text-sm">DAY 1</span>
+                                <span class="text-white uppercase">Upper A: Back & Arms</span>
+                            </div>
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-4 border-t border-gray-800 bg-black/20 text-sm text-gray-400">
+                            <table class="w-full text-left">
+                                <thead><tr class="text-gray-500"><th class="pb-2">Exercise</th><th class="pb-2">Sets</th><th class="pb-2">Reps</th><th class="pb-2">Rest</th></tr></thead>
+                                <tbody class="divide-y divide-gray-800">
+                                    <tr><td class="py-2 text-white">Lat Pulldown</td><td class="py-2">5</td><td class="py-2">15, 12, 10, 8, 6</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Incline DB Curl</td><td class="py-2">4</td><td class="py-2">16, 14, 12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Close-Grip Bench</td><td class="py-2">4</td><td class="py-2">12, 10, 8, 6</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Cable Row</td><td class="py-2">4</td><td class="py-2">16, 14, 12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">V-Bar Pushdowns</td><td class="py-2">3</td><td class="py-2">15, 12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Cable Ab Crunch</td><td class="py-2">4</td><td class="py-2">12, 10, 10, 10</td><td class="py-2">1-2 Min</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="h-8 w-px bg-gray-700 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-volt font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option selected>Upper A: Back & Arms</option>
-                                <option>Lower A: Leg Moat & Core</option>
-                                <option>Upper B: V-Taper & Width</option>
-                                <option>Lower B: Posterior Chain</option>
-                                <option>5KM Cardiovascular Run</option>
-                                <option>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">45-min block | + 5g Creatine</p>
-                        </div>
-                    </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day1" class="peer hidden matrix-check">
-                        <label for="day1" class="flex items-center justify-center w-full bg-gray-800 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-700 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
+                    </details>
 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-600 transition-colors">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-500 font-bold">DAY 2</span>
-                            <span class="block text-xl font-display text-white">TUE</span>
+                    <details class="bg-gray-900 border border-gray-800 rounded-lg group">
+                        <summary class="flex justify-between items-center p-4 font-bold cursor-pointer list-none hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <span class="text-volt w-12 text-sm">DAY 2</span>
+                                <span class="text-white uppercase">Lower A: Leg Moat & Core</span>
+                            </div>
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-4 border-t border-gray-800 bg-black/20 text-sm text-gray-400">
+                            <table class="w-full text-left">
+                                <thead><tr class="text-gray-500"><th class="pb-2">Exercise</th><th class="pb-2">Sets</th><th class="pb-2">Reps</th><th class="pb-2">Rest</th></tr></thead>
+                                <tbody class="divide-y divide-gray-800">
+                                    <tr><td class="py-2 text-white">Barbell Squats</td><td class="py-2">5</td><td class="py-2">12, 10, 8, 6, 4</td><td class="py-2">2-4 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Leg Press</td><td class="py-2">4</td><td class="py-2">12, 10, 8, 6</td><td class="py-2">2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Leg Extensions</td><td class="py-2">4</td><td class="py-2">16, 14, 12, 10</td><td class="py-2">1 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Seated Calf Raises</td><td class="py-2">3</td><td class="py-2">15, 12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Facepulls</td><td class="py-2">3</td><td class="py-2">12, 10, 8</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Hanging Leg Raises</td><td class="py-2">3</td><td class="py-2">12, 10, 11</td><td class="py-2">2-3 Min</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="h-8 w-px bg-gray-700 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-volt font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option>Upper A: Back & Arms</option>
-                                <option selected>Lower A: Leg Moat & Core</option>
-                                <option>Upper B: V-Taper & Width</option>
-                                <option>Lower B: Posterior Chain</option>
-                                <option>5KM Cardiovascular Run</option>
-                                <option>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">45-min block | + 5g Creatine</p>
-                        </div>
-                    </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day2" class="peer hidden matrix-check">
-                        <label for="day2" class="flex items-center justify-center w-full bg-gray-800 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-700 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
+                    </details>
 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-600 transition-colors">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-500 font-bold">DAY 3</span>
-                            <span class="block text-xl font-display text-white">WED</span>
+                    <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <span class="text-neonBlue font-bold w-12 text-sm">DAY 3</span>
+                            <span class="text-gray-300 font-bold uppercase">5KM Cardiovascular Run</span>
                         </div>
-                        <div class="h-8 w-px bg-gray-700 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-neonBlue font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option>Upper A: Back & Arms</option>
-                                <option>Lower A: Leg Moat & Core</option>
-                                <option>Upper B: V-Taper & Width</option>
-                                <option>Lower B: Posterior Chain</option>
-                                <option selected>5KM Cardiovascular Run</option>
-                                <option>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Endurance Block | + 5g Creatine</p>
-                        </div>
+                        <span class="text-xs text-gray-500 uppercase">+400 kcal Burn</span>
                     </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day3" class="peer hidden matrix-check">
-                        <label for="day3" class="flex items-center justify-center w-full bg-gray-800 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-700 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-600 transition-colors">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-500 font-bold">DAY 4</span>
-                            <span class="block text-xl font-display text-white">THU</span>
+                    <details class="bg-gray-900 border border-gray-800 rounded-lg group">
+                        <summary class="flex justify-between items-center p-4 font-bold cursor-pointer list-none hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <span class="text-volt w-12 text-sm">DAY 4</span>
+                                <span class="text-white uppercase">Upper B: V-Taper & Width</span>
+                            </div>
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-4 border-t border-gray-800 bg-black/20 text-sm text-gray-400">
+                            <table class="w-full text-left">
+                                <thead><tr class="text-gray-500"><th class="pb-2">Exercise</th><th class="pb-2">Sets</th><th class="pb-2">Reps</th><th class="pb-2">Rest</th></tr></thead>
+                                <tbody class="divide-y divide-gray-800">
+                                    <tr><td class="py-2 text-white">Barbell Bench</td><td class="py-2">5</td><td class="py-2">12, 10, 8, 6, 4</td><td class="py-2">2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Lat Pulldown</td><td class="py-2">4</td><td class="py-2">12, 10, 8, 6</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">DB Lateral Raise</td><td class="py-2">4</td><td class="py-2">12, 10, 8, 6</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Preacher Curl</td><td class="py-2">3</td><td class="py-2">12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Skull Crusher</td><td class="py-2">3</td><td class="py-2">12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Heavy Ab Crunch</td><td class="py-2">4</td><td class="py-2">16, 14, 12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="h-8 w-px bg-gray-700 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-volt font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option>Upper A: Back & Arms</option>
-                                <option>Lower A: Leg Moat & Core</option>
-                                <option selected>Upper B: V-Taper & Width</option>
-                                <option>Lower B: Posterior Chain</option>
-                                <option>5KM Cardiovascular Run</option>
-                                <option>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">45-min block | + 5g Creatine</p>
-                        </div>
-                    </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day4" class="peer hidden matrix-check">
-                        <label for="day4" class="flex items-center justify-center w-full bg-gray-800 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-700 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
+                    </details>
 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-600 transition-colors">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-500 font-bold">DAY 5</span>
-                            <span class="block text-xl font-display text-white">FRI</span>
+                    <details class="bg-gray-900 border border-gray-800 rounded-lg group">
+                        <summary class="flex justify-between items-center p-4 font-bold cursor-pointer list-none hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <span class="text-volt w-12 text-sm">DAY 5</span>
+                                <span class="text-white uppercase">Lower B: Posterior Chain</span>
+                            </div>
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-4 border-t border-gray-800 bg-black/20 text-sm text-gray-400">
+                            <table class="w-full text-left">
+                                <thead><tr class="text-gray-500"><th class="pb-2">Exercise</th><th class="pb-2">Sets</th><th class="pb-2">Reps</th><th class="pb-2">Rest</th></tr></thead>
+                                <tbody class="divide-y divide-gray-800">
+                                    <tr><td class="py-2 text-white">Leg Press</td><td class="py-2">4</td><td class="py-2">12, 10, 8, 6</td><td class="py-2">2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Seated Leg Curl</td><td class="py-2">3</td><td class="py-2">12, 10, 8</td><td class="py-2">2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Leg Extensions</td><td class="py-2">5</td><td class="py-2">15, 12, 10, 8, 6</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">Bulgarian Split Squat</td><td class="py-2">3</td><td class="py-2">15, 12, 10</td><td class="py-2">1-2 Min</td></tr>
+                                    <tr><td class="py-2 text-white">DB Shrugs</td><td class="py-2">3</td><td class="py-2">12, 10, 8</td><td class="py-2">1-2 Min</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="h-8 w-px bg-gray-700 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-volt font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option>Upper A: Back & Arms</option>
-                                <option>Lower A: Leg Moat & Core</option>
-                                <option>Upper B: V-Taper & Width</option>
-                                <option selected>Lower B: Posterior Chain</option>
-                                <option>5KM Cardiovascular Run</option>
-                                <option>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">45-min block | + 5g Creatine</p>
-                        </div>
-                    </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day5" class="peer hidden matrix-check">
-                        <label for="day5" class="flex items-center justify-center w-full bg-gray-800 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-700 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
+                    </details>
 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-gray-600 transition-colors">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-500 font-bold">DAY 6</span>
-                            <span class="block text-xl font-display text-white">SAT</span>
+                    <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <span class="text-neonBlue font-bold w-12 text-sm">DAY 6</span>
+                            <span class="text-gray-300 font-bold uppercase">5KM Cardiovascular Run</span>
                         </div>
-                        <div class="h-8 w-px bg-gray-700 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-neonBlue font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option>Upper A: Back & Arms</option>
-                                <option>Lower A: Leg Moat & Core</option>
-                                <option>Upper B: V-Taper & Width</option>
-                                <option>Lower B: Posterior Chain</option>
-                                <option selected>5KM Cardiovascular Run</option>
-                                <option>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Endurance Block | + 5g Creatine</p>
-                        </div>
+                        <span class="text-xs text-gray-500 uppercase">+400 kcal Burn</span>
                     </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day6" class="peer hidden matrix-check">
-                        <label for="day6" class="flex items-center justify-center w-full bg-gray-800 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-700 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
 
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-4 bg-gray-800 border border-gray-700 rounded-lg hover:border-gray-500 transition-colors opacity-80">
-                    <div class="flex items-center gap-4 mb-3 md:mb-0 w-full">
-                        <div class="w-12 text-center shrink-0">
-                            <span class="block text-xs text-gray-400 font-bold">DAY 7</span>
-                            <span class="block text-xl font-display text-gray-300">SUN</span>
+                    <div class="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4 flex justify-between items-center opacity-80">
+                        <div class="flex items-center gap-4">
+                            <span class="text-gray-500 font-bold w-12 text-sm">DAY 7</span>
+                            <span class="text-gray-400 font-bold uppercase">Nervous System Flush</span>
                         </div>
-                        <div class="h-8 w-px bg-gray-600 hidden md:block"></div>
-                        <div class="flex flex-col w-full">
-                            <select class="bg-transparent text-white font-bold uppercase focus:outline-none cursor-pointer appearance-none text-lg">
-                                <option>Upper A: Back & Arms</option>
-                                <option>Lower A: Leg Moat & Core</option>
-                                <option>Upper B: V-Taper & Width</option>
-                                <option>Lower B: Posterior Chain</option>
-                                <option>5KM Cardiovascular Run</option>
-                                <option selected>Nervous System Flush (Rest)</option>
-                            </select>
-                            <p class="text-xs text-gray-400 mt-1">Zero Loads | 10k Steps Only</p>
-                        </div>
+                        <span class="text-xs text-gray-500 uppercase">10k Steps Only</span>
                     </div>
-                    <div class="w-full md:w-auto shrink-0">
-                        <input type="checkbox" id="day7" class="peer hidden matrix-check">
-                        <label for="day7" class="flex items-center justify-center w-full bg-gray-700 text-gray-300 peer-checked:bg-volt peer-checked:text-gymDark hover:bg-volt hover:text-gymDark px-6 py-2 rounded cursor-pointer transition-colors font-bold uppercase text-xs border border-gray-600 select-none">
-                            MARK COMPLETE
-                        </label>
-                    </div>
-                </div>
 
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg">
+    <div class="bg-gymPanel rounded-xl p-6 border border-gray-800 shadow-lg mt-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-display font-bold text-white">TRAJECTORY FORECAST</h2>
             <span class="text-xs text-gray-500 uppercase font-bold">Predicted T-Tomorrow: <span class="text-neonBlue">{{ forecasted_weight }} KG</span></span>
@@ -305,27 +256,7 @@
 </div>
 
 <script>
-    // --- WEEKLY EXECUTION COUNTER LOGIC ---
-    const checkboxes = document.querySelectorAll('.matrix-check');
-    const counterDisplay = document.getElementById('execution-counter');
-
-    checkboxes.forEach(box => {
-        box.addEventListener('change', () => {
-            const completedCount = document.querySelectorAll('.matrix-check:checked').length;
-            counterDisplay.innerText = `EXECUTION: ${completedCount}/7 DAYS`;
-            
-            // Optional: Make the counter pop when fully completed
-            if (completedCount === 7) {
-                counterDisplay.classList.replace('text-volt', 'text-gymDark');
-                counterDisplay.classList.replace('bg-gray-800', 'bg-volt');
-            } else {
-                counterDisplay.classList.replace('text-gymDark', 'text-volt');
-                counterDisplay.classList.replace('bg-volt', 'bg-gray-800');
-            }
-        });
-    });
-
-    // --- CHART LOGIC ---
+    // --- DYNAMIC CHART LOGIC ---
     const ctx = document.getElementById('trajectoryChart').getContext('2d');
     
     let gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -335,7 +266,7 @@
     const trajectoryChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ['Day 1 (Start)', 'Yesterday', 'Today', 'Tomorrow (Forecast)'],
+            labels: ['Day 1 (Start)', 'Yesterday', 'Today ({{ log.weight }}kg)', 'Tomorrow (Forecast)'],
             datasets: [{
                 label: 'Bodyweight Trajectory (KG)',
                 data: [88.0, {{ log.weight + 0.1 }}, {{ log.weight }}, {{ forecasted_weight }}],
@@ -362,16 +293,8 @@
                 }
             },
             scales: {
-                y: {
-                    min: 79.5,
-                    max: 89.0,
-                    grid: { color: '#27272a', drawBorder: false },
-                    ticks: { color: '#71717a', font: { family: 'Inter', size: 10 } }
-                },
-                x: {
-                    grid: { display: false, drawBorder: false },
-                    ticks: { color: '#71717a', font: { family: 'Inter', size: 10 } }
-                }
+                y: { min: 79.5, max: 89.0, grid: { color: '#27272a' }, ticks: { color: '#71717a' } },
+                x: { grid: { display: false }, ticks: { color: '#71717a' } }
             }
         }
     });
